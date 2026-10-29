@@ -1,0 +1,613 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yu-Gi-Oh! Duel Arena</title>
+<style>
+:root {
+  --gold: #f4c45e;
+  --panel: #121a2c;
+  --bg: #070b16;
+  --text: #f4f6ff;
+  --muted: #aab5ce;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  color: var(--text);
+  font-family: Arial, Helvetica, sans-serif;
+  background:
+    radial-gradient(ellipse at top, #24365e 0, #10182b 45%, #070b16 100%);
+  min-height: 100vh;
+}
+header {
+  padding: 18px;
+  text-align: center;
+  border-bottom: 2px solid #d7a83c;
+  background: rgba(5, 8, 17, .9);
+}
+h1 {
+  margin: 0;
+  color: var(--gold);
+  letter-spacing: 2px;
+  text-shadow: 0 0 18px #bd822b66;
+}
+.subtitle { color: var(--muted); margin-top: 7px; font-size: 13px; }
+main { width: min(1200px, 96%); margin: 18px auto 30px; }
+.topbar {
+  display: flex; flex-wrap: wrap; gap: 10px;
+  justify-content: space-between; align-items: center;
+  background: #10192be8; border: 1px solid #334462;
+  padding: 12px; border-radius: 12px; margin-bottom: 14px;
+}
+.status { color: var(--gold); font-weight: bold; }
+button {
+  cursor: pointer; color: white; font-weight: bold;
+  border: 1px solid #63769b; border-radius: 8px;
+  background: linear-gradient(#33496d, #1c2942);
+  padding: 9px 12px; transition: .15s;
+}
+button:hover { filter: brightness(1.25); transform: translateY(-1px); }
+button:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+.primary { background: linear-gradient(#d6a744, #875b19); color: #120d04; border-color: #ffdc81; }
+.danger { background: linear-gradient(#9e384b, #5a1e30); }
+.duel {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+}
+.player {
+  background: #111a2ce8; border: 1px solid #354665;
+  border-radius: 12px; padding: 13px; min-width: 0;
+}
+.player h2 { margin: 0 0 10px; font-size: 17px; }
+.lp-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.lp {
+  color: #8dffb2; font-size: 22px; font-weight: bold;
+  font-variant-numeric: tabular-nums;
+}
+.life-track { height: 7px; border-radius: 10px; background: #303b50; margin: 8px 0 12px; overflow: hidden; }
+.life-fill { height: 100%; background: linear-gradient(90deg, #28d17c, #b4ff85); transition: width .3s; }
+.zones {
+  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px;
+}
+.zone {
+  aspect-ratio: 2 / 3; min-width: 0; border: 1px dashed #52617d;
+  border-radius: 7px; background: #17223a; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  color: #7f8ba7; font-size: 10px; text-align: center;
+  position: relative;
+}
+.zone.selected { outline: 2px solid var(--gold); }
+.zone img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.zone .empty { padding: 2px; }
+.zone .position {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  padding: 4px 1px; font-size: 9px; color: white;
+  background: #000c; text-align: center;
+}
+.section-title { margin: 20px 0 9px; color: var(--gold); font-size: 15px; }
+.hand {
+  display: flex; gap: 9px; overflow-x: auto;
+  padding: 8px 3px 14px; min-height: 200px;
+}
+.card {
+  flex: 0 0 122px; width: 122px; border-radius: 8px;
+  background: #c79b53; padding: 5px; color: #17110a;
+  box-shadow: 0 4px 12px #0008; border: 2px solid #e4c47b;
+  cursor: pointer; position: relative; transition: .15s;
+}
+.card:hover { transform: translateY(-5px); }
+.card.selected { outline: 3px solid #fff18b; transform: translateY(-5px); }
+.card.spell { background: #247e76; border-color: #67d8bd; color: white; }
+.card.trap { background: #8a3d75; border-color: #e18bc6; color: white; }
+.card img { width: 100%; aspect-ratio: 421 / 614; object-fit: cover; background: #111; display: block; border: 1px solid #241d15; }
+.card-name { font-size: 11px; font-weight: bold; min-height: 28px; padding: 5px 1px 2px; }
+.card-type { font-size: 9px; opacity: .8; }
+.card-stats { font-size: 10px; font-weight: bold; text-align: right; margin-top: 5px; }
+.card-number { font-size: 9px; opacity: .8; margin-top: 3px; }
+.controls {
+  display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0;
+}
+.log {
+  border: 1px solid #34435e; background: #090f1d;
+  border-radius: 10px; padding: 12px; min-height: 100px;
+  max-height: 190px; overflow-y: auto; color: #c5d0e5; font-size: 13px;
+}
+.log p { margin: 0 0 7px; }
+.help { color: var(--muted); font-size: 12px; line-height: 1.6; }
+footer { text-align: center; color: #8592ad; padding: 15px; font-size: 11px; }
+.overlay {
+  display: none; position: fixed; inset: 0; z-index: 5;
+  background: #030611dd; align-items: center; justify-content: center; padding: 18px;
+}
+.overlay.show { display: flex; }
+.modal {
+  width: min(440px, 100%); padding: 24px; text-align: center;
+  border: 1px solid var(--gold); border-radius: 14px;
+  background: #111b30; box-shadow: 0 0 50px #000;
+}
+.modal h2 { color: var(--gold); }
+@media (max-width: 650px) {
+  h1 { font-size: 22px; }
+  main { width: 94%; }
+  .duel { grid-template-columns: 1fr; }
+  .card { flex-basis: 105px; width: 105px; }
+  .zone .position { font-size: 8px; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>YU-GI-OH! DUEL ARENA</h1>
+  <div class="subtitle">Build your field. Summon your monsters. Win the duel!</div>
+</header>
+
+<main>
+  <div class="topbar">
+    <div>
+      <div class="status" id="turnLabel">Giliranmu</div>
+      <div class="help" id="phaseLabel">Pilih kartu dari tanganmu.</div>
+    </div>
+    <div class="controls" style="margin:0">
+      <button id="drawBtn" class="primary">Draw Card</button>
+      <button id="endBtn">Akhiri Giliran</button>
+      <button id="restartBtn" class="danger">Duel Baru</button>
+    </div>
+  </div>
+
+  <div class="duel">
+    <section class="player">
+      <h2>🔵 Kamu</h2>
+      <div class="lp-row"><span>Life Points</span><span class="lp" id="playerLP">8000</span></div>
+      <div class="life-track"><div id="playerLifeFill" class="life-fill" style="width:100%"></div></div>
+      <div class="help">Zona Monster (maks. 5)</div>
+      <div class="zones" id="playerZones"></div>
+      <div class="help" id="playerCount">Deck: 0 | Graveyard: 0</div>
+    </section>
+
+    <section class="player">
+      <h2>🔴 CPU</h2>
+      <div class="lp-row"><span>Life Points</span><span class="lp" id="cpuLP">8000</span></div>
+      <div class="life-track"><div id="cpuLifeFill" class="life-fill" style="width:100%"></div></div>
+      <div class="help">Zona Monster (maks. 5)</div>
+      <div class="zones" id="cpuZones"></div>
+      <div class="help" id="cpuCount">Deck: 0 | Graveyard: 0</div>
+    </section>
+  </div>
+
+  <div class="section-title">Kartu di Tanganmu</div>
+  <div class="help">Klik kartu untuk memilih, lalu gunakan tombol aksi di bawah.</div>
+  <div class="hand" id="hand"></div>
+
+  <div class="controls">
+    <button id="summonBtn" class="primary">Summon Attack</button>
+    <button id="defenseBtn">Summon Defense</button>
+    <button id="attackBtn" class="danger">Serang CPU</button>
+    <button id="spellBtn">Gunakan Spell</button>
+    <button id="setBtn">Set Kartu</button>
+  </div>
+
+  <div class="section-title">Battle Log</div>
+  <div class="log" id="log" aria-live="polite"></div>
+
+  <div class="section-title">Cara Bermain</div>
+  <div class="help">
+    1. Draw Card untuk mengambil kartu. Kamu juga otomatis menarik kartu saat awal giliran.<br>
+    2. Pilih monster di tangan, lalu tekan Summon Attack atau Summon Defense.<br>
+    3. Pilih monster milikmu di field, lalu tekan Serang CPU.<br>
+    4. Spell seperti Raigeki menghancurkan monster CPU. Monster Reborn menghidupkan monster dari Graveyard.<br>
+    5. Tekan Akhiri Giliran agar CPU bermain. Kalahkan Life Points CPU untuk menang.
+  </div>
+</main>
+
+<footer>Fan-made demo for learning purposes. Yu-Gi-Oh! is a trademark of its respective owners.</footer>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h2 id="resultTitle">Duel Selesai</h2>
+    <p id="resultText"></p>
+    <button class="primary" id="playAgainBtn">Main Lagi</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/*
+  Demo ini menggunakan gambar kartu dari YGOPRODeck.
+  Untuk website publik jangka panjang, sebaiknya unduh gambar dan host
+  sendiri, serta periksa ketentuan penggunaan sumber gambar.
+*/
+const CARD_IMAGE = id => `https://images.ygoprodeck.com/images/cards/${id}.jpg`;
+
+const CARD_POOL = [
+  {id:46986414, name:"Dark Magician", type:"monster", atk:2500, def:2100, level:7},
+  {id:89631139, name:"Blue-Eyes White Dragon", type:"monster", atk:3000, def:2500, level:8},
+  {id:74677422, name:"Red-Eyes Black Dragon", type:"monster", atk:2400, def:2000, level:7},
+  {id:70781052, name:"Summoned Skull", type:"monster", atk:2500, def:1200, level:6},
+  {id:91152256, name:"Celtic Guardian", type:"monster", atk:1400, def:1200, level:4},
+  {id:40640057, name:"Kuriboh", type:"monster", atk:300, def:200, level:1},
+  {id:15025844, name:"Mystical Elf", type:"monster", atk:800, def:2000, level:4},
+  {id:75850803, name:"Battle Ox", type:"monster", atk:1700, def:1000, level:4},
+  {id:88819587, name:"Baby Dragon", type:"monster", atk:1200, def:700, level:3},
+  {id:130798, name:"Giant Soldier of Stone", type:"monster", atk:1300, def:2000, level:3},
+  {id:83764718, name:"Monster Reborn", type:"spell", effect:"reborn"},
+  {id:12580477, name:"Raigeki", type:"spell", effect:"raigeki"},
+  {id:55144522, name:"Pot of Greed", type:"spell", effect:"draw"},
+  {id:53129443, name:"Dark Hole", type:"spell", effect:"darkhole"},
+  {id:44095762, name:"Mirror Force", type:"trap", effect:"trap"}
+];
+
+const state = {};
+let uid = 0;
+
+function makeCard(template) {
+  return {...template, uid: ++uid, image: CARD_IMAGE(template.id)};
+}
+function shuffledDeck() {
+  const cards = [];
+  // Campurkan salinan kartu untuk membuat deck demo.
+  for (let i = 0; i < 3; i++) {
+    CARD_POOL.forEach(c => cards.push(makeCard(c)));
+  }
+  for (let i = cards.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [cards[i], cards[j]] = [cards[j], cards[i]];
+  }
+  return cards;
+}
+function freshSide() {
+  return {lp:8000, deck:shuffledDeck(), hand:[], field:Array(5).fill(null), grave:[], normalSummonUsed:false, attacked:new Set()};
+}
+function newGame() {
+  state.player = freshSide();
+  state.cpu = freshSide();
+  state.turn = "player";
+  state.round = 1;
+  state.selectedHand = null;
+  state.selectedField = null;
+  state.gameOver = false;
+  state.cpuTrap = false;
+  state.message = "Duel dimulai! Ambil kartu dan summon monster.";
+  for (let i = 0; i < 5; i++) {
+    draw("player", true);
+    draw("cpu", true);
+  }
+  log("Duel dimulai. Kamu jalan pertama!");
+  render();
+}
+function log(message) {
+  const el = document.getElementById("log");
+  const p = document.createElement("p");
+  p.textContent = message;
+  el.prepend(p);
+}
+function draw(side, silent=false) {
+  const s = state[side];
+  if (!s || s.deck.length === 0) {
+    if (!silent) log((side === "player" ? "Kamu" : "CPU") + " tidak memiliki kartu untuk diambil.");
+    return false;
+  }
+  s.hand.push(s.deck.pop());
+  if (!silent) log((side === "player" ? "Kamu" : "CPU") + " mengambil satu kartu.");
+  return true;
+}
+function freeZone(side) {
+  return state[side].field.findIndex(c => c === null);
+}
+function monsterCount(side) {
+  return state[side].field.filter(Boolean).length;
+}
+function selectedCard() {
+  if (state.selectedHand === null) return null;
+  return state.player.hand[state.selectedHand] || null;
+}
+function isMonster(card) { return card && card.type === "monster"; }
+function canAct() { return !state.gameOver && state.turn === "player"; }
+
+function render() {
+  renderSide("player");
+  renderSide("cpu");
+  renderHand();
+  document.getElementById("turnLabel").textContent =
+    state.gameOver ? "Duel Selesai" : (state.turn === "player" ? "Giliranmu" : "Giliran CPU");
+  document.getElementById("phaseLabel").textContent =
+    state.gameOver ? "Tekan Duel Baru untuk bermain kembali." :
+    (state.turn === "player" ? "Pilih kartu, summon monster, atau serang." : "CPU sedang bermain...");
+  const card = selectedCard();
+  document.getElementById("summonBtn").disabled = !canAct() || !isMonster(card) || state.player.normalSummonUsed || freeZone("player") < 0;
+  document.getElementById("defenseBtn").disabled = !canAct() || !isMonster(card) || state.player.normalSummonUsed || freeZone("player") < 0;
+  document.getElementById("setBtn").disabled = !canAct() || !card || card.type === "monster" || freeZone("player") < 0;
+  document.getElementById("spellBtn").disabled = !canAct() || !card || card.type !== "spell";
+  document.getElementById("attackBtn").disabled = !canAct() || state.selectedField === null || !state.player.field[state.selectedField] || state.player.attacked.has(state.player.field[state.selectedField].uid);
+  document.getElementById("drawBtn").disabled = !canAct() || state.player.deck.length === 0;
+  document.getElementById("endBtn").disabled = !canAct();
+  document.getElementById("overlay").classList.toggle("show", state.gameOver);
+}
+function renderSide(side) {
+  const s = state[side];
+  document.getElementById(side === "player" ? "playerLP" : "cpuLP").textContent = s.lp;
+  document.getElementById(side === "player" ? "playerLifeFill" : "cpuLifeFill").style.width = Math.max(0, s.lp / 8000 * 100) + "%";
+  document.getElementById(side === "player" ? "playerCount" : "cpuCount").textContent =
+    `Deck: ${s.deck.length} | Graveyard: ${s.grave.length}`;
+  const zones = document.getElementById(side === "player" ? "playerZones" : "cpuZones");
+  zones.innerHTML = "";
+  s.field.forEach((card, i) => {
+    const zone = document.createElement("div");
+    zone.className = "zone";
+    if (side === "player" && state.selectedField === i) zone.classList.add("selected");
+    if (card) {
+      const img = document.createElement("img");
+      img.src = card.image;
+      img.alt = card.name;
+      img.loading = "lazy";
+      img.onerror = () => { img.onerror = null; img.src = "https://placehold.co/200x290/182238/ffffff?text=Card"; };
+      zone.appendChild(img);
+      const pos = document.createElement("div");
+      pos.className = "position";
+      pos.textContent = card.faceDown ? "SET" : (card.position === "defense" ? "DEF" : "ATK");
+      zone.appendChild(pos);
+      zone.title = `${card.name} | ATK ${card.atk || 0} / DEF ${card.def || 0}`;
+    } else {
+      const empty = document.createElement("div");
+      empty.className = "empty";
+      empty.textContent = "Zona " + (i + 1);
+      zone.appendChild(empty);
+    }
+    if (side === "player") zone.addEventListener("click", () => {
+      if (!canAct()) return;
+      state.selectedField = card ? i : null;
+      render();
+    });
+    zones.appendChild(zone);
+  });
+}
+function renderHand() {
+  const hand = document.getElementById("hand");
+  hand.innerHTML = "";
+  state.player.hand.forEach((card, i) => {
+    const el = document.createElement("div");
+    el.className = "card " + (card.type === "spell" ? "spell" : card.type === "trap" ? "trap" : "");
+    if (state.selectedHand === i) el.classList.add("selected");
+    const img = document.createElement("img");
+    img.src = card.image;
+    img.alt = card.name;
+    img.loading = "lazy";
+    img.onerror = () => { img.onerror = null; img.src = "https://placehold.co/200x290/182238/ffffff?text=Card"; };
+    const name = document.createElement("div");
+    name.className = "card-name";
+    name.textContent = card.name;
+    const type = document.createElement("div");
+    type.className = "card-type";
+    type.textContent = card.type.toUpperCase();
+    const stats = document.createElement("div");
+    stats.className = "card-stats";
+    stats.textContent = card.type === "monster" ? `ATK ${card.atk} / DEF ${card.def}` : card.type.toUpperCase();
+    el.append(img, name, type, stats);
+    el.addEventListener("click", () => {
+      if (!canAct()) return;
+      state.selectedHand = i;
+      state.selectedField = null;
+      render();
+    });
+    hand.appendChild(el);
+  });
+  if (state.player.hand.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "help";
+    empty.textContent = "Tangan kosong. Tekan Draw Card.";
+    hand.appendChild(empty);
+  }
+}
+function takeFromHand(index) {
+  const card = state.player.hand.splice(index, 1)[0];
+  state.selectedHand = null;
+  return card;
+}
+function summon(position) {
+  if (!canAct()) return;
+  const card = selectedCard();
+  if (!isMonster(card)) return;
+  if (state.player.normalSummonUsed) return log("Kamu sudah melakukan Normal Summon pada giliran ini.");
+  const zone = freeZone("player");
+  if (zone < 0) return log("Zona monster penuh!");
+  const monster = takeFromHand(state.selectedHand);
+  monster.position = position;
+  monster.faceDown = false;
+  state.player.field[zone] = monster;
+  state.player.normalSummonUsed = true;
+  log(`Kamu memanggil ${monster.name} dalam posisi ${position === "attack" ? "Attack" : "Defense"}.`);
+  render();
+}
+function setCard() {
+  if (!canAct()) return;
+  const card = selectedCard();
+  if (!card || card.type === "monster") return;
+  const zone = freeZone("player");
+  if (zone < 0) return log("Zona monster penuh!");
+  const set = takeFromHand(state.selectedHand);
+  set.faceDown = true;
+  set.position = "defense";
+  state.player.field[zone] = set;
+  log(`Kamu Set ${set.type} card.`);
+  render();
+}
+function useSpell() {
+  if (!canAct()) return;
+  const card = selectedCard();
+  if (!card || card.type !== "spell") return;
+  if (card.effect === "reborn" && state.player.grave.filter(isMonster).length === 0) {
+    return log("Graveyard kamu belum memiliki monster untuk dihidupkan.");
+  }
+  takeFromHand(state.selectedHand);
+  state.player.grave.push(card);
+  if (card.effect === "raigeki" || card.effect === "darkhole") {
+    const targetSide = card.effect === "raigeki" ? "cpu" : "both";
+    ["cpu", "player"].forEach(side => {
+      if (targetSide === "both" || side === targetSide) {
+        state[side].field.forEach((c, i) => {
+          if (isMonster(c)) state[side].grave.push(c);
+          if (c && c.type !== "monster") state[side].grave.push(c);
+          state[side].field[i] = null;
+        });
+      }
+    });
+    log(card.name + (targetSide === "both" ? " menghancurkan semua monster di field!" : " menghancurkan monster CPU!"));
+  } else if (card.effect === "draw") {
+    draw("player");
+    draw("player");
+    log("Pot of Greed: kamu mengambil 2 kartu.");
+  } else if (card.effect === "reborn") {
+    const graveIndex = state.player.grave.findIndex(isMonster);
+    const monster = state.player.grave.splice(graveIndex, 1)[0];
+    const zone = freeZone("player");
+    if (zone >= 0) {
+      monster.position = "attack";
+      monster.faceDown = false;
+      state.player.field[zone] = monster;
+      log("Monster Reborn menghidupkan " + monster.name + "!");
+    } else {
+      state.player.grave.push(monster);
+      log("Zona penuh; Monster Reborn tidak dapat memanggil monster.");
+    }
+  }
+  checkWinner();
+  render();
+}
+function attack() {
+  if (!canAct() || state.selectedField === null) return;
+  const attacker = state.player.field[state.selectedField];
+  if (!isMonster(attacker)) return;
+  if (state.player.attacked.has(attacker.uid)) return log("Monster ini sudah menyerang pada giliran ini.");
+  if (attacker.faceDown || attacker.position !== "attack") return log("Monster harus terbuka dalam posisi Attack.");
+  const defenders = state.cpu.field.map((c, i) => c ? i : -1).filter(i => i >= 0);
+  state.player.attacked.add(attacker.uid);
+  if (defenders.length === 0) {
+    state.cpu.lp -= attacker.atk;
+    log(`${attacker.name} menyerang langsung! CPU kehilangan ${attacker.atk} LP.`);
+  } else {
+    const targetIndex = defenders[Math.floor(Math.random() * defenders.length)];
+    const defender = state.cpu.field[targetIndex];
+    const defenseValue = defender.position === "defense" ? defender.def : defender.atk;
+    if (attacker.atk > defenseValue) {
+      if (defender.position === "attack") {
+        state.cpu.lp -= attacker.atk - defender.atk;
+      }
+      state.cpu.grave.push(defender);
+      state.cpu.field[targetIndex] = null;
+      log(`${attacker.name} menghancurkan ${defender.name}!`);
+    } else if (attacker.atk < defenseValue) {
+      if (defender.position === "attack") {
+        state.player.lp -= defender.atk - attacker.atk;
+      } else {
+        state.player.lp -= Math.max(0, defender.def - attacker.atk);
+      }
+      state.player.grave.push(attacker);
+      state.player.field[state.selectedField] = null;
+      log(`${attacker.name} kalah saat menyerang ${defender.name}!`);
+      state.selectedField = null;
+    } else {
+      state.player.grave.push(attacker);
+      state.cpu.grave.push(defender);
+      state.player.field[state.selectedField] = null;
+      state.cpu.field[targetIndex] = null;
+      state.selectedField = null;
+      log("Kedua monster hancur karena ATK/DEF yang sama.");
+    }
+  }
+  checkWinner();
+  render();
+}
+function endTurn() {
+  if (!canAct()) return;
+  state.turn = "cpu";
+  state.selectedHand = null;
+  state.selectedField = null;
+  render();
+  setTimeout(cpuTurn, 650);
+}
+function cpuTurn() {
+  if (state.gameOver) return;
+  draw("cpu", true);
+  log("CPU mengambil kartu.");
+  const zone = freeZone("cpu");
+  if (zone >= 0) {
+    const idx = state.cpu.hand.findIndex(isMonster);
+    if (idx >= 0) {
+      const monster = state.cpu.hand.splice(idx, 1)[0];
+      monster.position = "attack";
+      monster.faceDown = false;
+      state.cpu.field[zone] = monster;
+      log("CPU memanggil " + monster.name + ".");
+    }
+  }
+  // CPU menyerang dengan monster yang baru ada di field.
+  state.cpu.field.forEach((attacker, idx) => {
+    if (!isMonster(attacker) || attacker.position !== "attack" || state.gameOver) return;
+    const targets = state.player.field.map((c, i) => c ? i : -1).filter(i => i >= 0);
+    if (targets.length === 0) {
+      state.player.lp -= attacker.atk;
+      log("CPU menyerang langsung dengan " + attacker.name + "! Kamu kehilangan " + attacker.atk + " LP.");
+      return;
+    }
+    const ti = targets[Math.floor(Math.random() * targets.length)];
+    const target = state.player.field[ti];
+    const targetValue = target.position === "defense" ? target.def : target.atk;
+    if (attacker.atk > targetValue) {
+      if (target.position === "attack") state.player.lp -= attacker.atk - target.atk;
+      state.player.grave.push(target);
+      state.player.field[ti] = null;
+      log("CPU menghancurkan " + target.name + "!");
+    } else if (attacker.atk < targetValue) {
+      if (target.position === "attack") state.cpu.lp -= target.atk - attacker.atk;
+      state.cpu.grave.push(attacker);
+      state.cpu.field[idx] = null;
+      log("Monster CPU " + attacker.name + " dihancurkan!");
+    } else {
+      state.player.grave.push(target);
+      state.cpu.grave.push(attacker);
+      state.player.field[ti] = null;
+      state.cpu.field[idx] = null;
+      log("Kedua monster hancur dalam pertarungan.");
+    }
+  });
+  checkWinner();
+  if (!state.gameOver) {
+    state.turn = "player";
+    state.round++;
+    state.player.normalSummonUsed = false;
+    state.player.attacked.clear();
+    draw("player", true);
+    log("Giliranmu dimulai. Kamu mengambil satu kartu.");
+  }
+  render();
+}
+function checkWinner() {
+  if (state.player.lp <= 0) finish("Kamu Kalah!", "Life Points kamu habis.");
+  else if (state.cpu.lp <= 0) finish("Kamu Menang!", "Life Points CPU habis. Selamat!");
+}
+function finish(title, text) {
+  state.gameOver = true;
+  document.getElementById("resultTitle").textContent = title;
+  document.getElementById("resultText").textContent = text;
+  render();
+}
+document.getElementById("drawBtn").addEventListener("click", () => {
+  if (!canAct()) return;
+  draw("player");
+  render();
+});
+document.getElementById("summonBtn").addEventListener("click", () => summon("attack"));
+document.getElementById("defenseBtn").addEventListener("click", () => summon("defense"));
+document.getElementById("setBtn").addEventListener("click", setCard);
+document.getElementById("spellBtn").addEventListener("click", useSpell);
+document.getElementById("attackBtn").addEventListener("click", attack);
+document.getElementById("endBtn").addEventListener("click", endTurn);
+document.getElementById("restartBtn").addEventListener("click", newGame);
+document.getElementById("playAgainBtn").addEventListener("click", newGame);
+
+newGame();
+</script>
+</body>
+</html>
